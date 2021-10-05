@@ -1,0 +1,532 @@
+### UI Trust Fund, Funding, and Payment Visualization
+
+## Three data sets: "TWBState", "TWBYear", and "TFYear." "State" is IV state. 
+## (This is the more frequently used of the set.) "Year" is IV year.
+
+## X (Independent Variables) - Taxable Wage Base (TWB), Trust Fund (TF), Maximum
+## Weekly Benefit Amount (MWBA).
+## Y (Dependent variables) - Political party affiliation (Republican 
+## Governor(RG) v Democratic Governor (DG), Republican President (RP) v 
+## Democratic President (DP), Population, Geographic Area, and 
+## Gross Domestic Product (GDP).
+
+## Hypothesis 1: States with higher trust fund amounts will have higher taxable 
+## wage base.
+## H2: States with lower MWBA will have lower TWB, higher TFs.
+## H3: In states that see a change from Republican to Democratic administrations,
+## there will be higher TWBs, lower TFs, higher MWBAs.
+
+library(readxl)
+TWBState <- read_excel("C:/Users/Bridgette/Desktop/UI Tax Project/TWBState.xlsx", 
+    guess_max = min(2000, n_max = NULL))
+library(readxl)
+TWBYear <- read_excel("C:/Users/Bridgette/Desktop/UI Tax Project/TWBYear.xlsx", 
+    guess_max = min(2000, n_max = NULL))
+library(readxl)
+TFYear <- read_excel("C:/Users/Bridgette/Desktop//UI Tax Project/TFYear.xlsx", 
+    guess_max = min(2000, n_max = NULL))
+    
+### NEED TO TAKE ADJUSTED TF AND APPLY IT ACROSS THE BOARD TO OTHER VIZ.
+
+### Basic TWB by TF.
+## Scatterplot of Taxable Wage Base by Trust Fund in Previous Year.
+```{r}
+TFP21 <- lm(TWB21 ~ TF20, data = TWBState)
+summary(TFP21)
+
+p1 <- ggplot(TWBState, aes(y=TF20, x=TWB21)) +
+  geom_smooth(method=lm, se=FALSE) +
+  xlab("Taxable Wage Base 2021 by State") +
+  ylab("Trust Fund 2020 by State") +
+  geom_text(label = TWBState$State, size = 2) +
+  coord_cartesian(ylim = c(0, 5000))
+p2 <- ggplot(TWBState, aes(y=TF19, x=TWB20)) +
+  geom_smooth(method=lm, se=FALSE) +
+  xlab("Taxable Wage Base 2020 by State") +
+  ylab("Trust Fund 2019 by State") +
+  geom_text(label = TWBState$State, size = 2) +
+  coord_cartesian(ylim = c(0, 5000))
+p3 <- ggplot(TWBState, aes(y=TF18, x=TWB19)) +
+  geom_smooth(method=lm, se=FALSE) +
+  xlab("Taxable Wage Base 2019 by State") +
+  ylab("Trust Fund 2018 by State") +
+  geom_text(label = TWBState$State, size = 2) +
+  coord_cartesian(ylim = c(0, 5000))
+p4 <- ggplot(TWBState, aes(y=TF17, x=TWB18)) +
+  geom_smooth(method=lm, se=FALSE) +
+  xlab("Taxable Wage Base 2018 by State") +
+  ylab("Trust Fund 2017 by State") +
+  geom_text(label = TWBState$State, size = 2) +  
+  coord_cartesian(ylim = c(0, 5000))
+p5 <- ggplot(TWBState, aes(y=TF16, x=TWB17)) +
+  geom_smooth(method=lm, se=FALSE) +
+  xlab("Taxable Wage Base 2017 by State") +
+  ylab("Trust Fund 2016 by State") +
+  geom_text(label = TWBState$State, size = 2) +
+  coord_cartesian(ylim = c(0, 5000))
+p6 <- ggplot(TWBState, aes(y=TF15, x=TWB16)) +
+  geom_smooth(method=lm, se=FALSE) +
+  xlab("Taxable Wage Base 2016 by State") +
+  ylab("Trust Fund 2015 by State") +
+  geom_text(label = TWBState$State, size = 2) +
+  coord_cartesian(ylim = c(0, 5000))
+
+multiplot(p1, p2, p3, p4, p5, p6, cols=3)
+```
+
+## Scatterplot with adjusted TF, controlling for GDP.
+```{r}
+p1 <- ggplot(TWBState, aes(y=TF20, x=TWB21)) +
+  geom_smooth(method=lm, se=FALSE, color = "#332288") +
+  xlab("Taxable Wage Base 2021 by State") +
+  ylab("Trust Fund 2020 by State (in millions)") +
+  geom_text(label = TWBState$State, size = 4.5) +
+  coord_cartesian(ylim = c(0, 5250))
+
+Adjp1 <- ggplot(TWBState, aes(y=AdjTF20, x=TWB21)) +
+  geom_smooth(method=lm, se=FALSE, color = "#332288") +
+  xlab("Taxable Wage Base 2021 by State") +
+  ylab("Trust Fund 2020 by State (in millions)") +
+  geom_text(label = TWBState$State, size = 4.5) +
+  coord_cartesian(ylim = c(0, 0.0013))
+Adjp5 <- ggplot(TWBState, aes(y=AdjTF16, x=TWB17)) +
+  geom_smooth(method=lm, se=FALSE, color = "#332288") +
+  xlab("Taxable Wage Base 2017 by State") +
+  ylab("Trust Fund 2016 by State (in millions)") +
+  geom_text(label = TWBState$State, size = 2) +
+  coord_cartesian(ylim = c(0, 0.0013))
+
+multiplot(Adjp1, Adjp5, cols=2)
+```
+
+
+## Dumbbell State changes 20 to 15.
+```{r}
+class(TWBState$REG)
+TWBState$REG <- factor(TWBState$REG, levels=as.character(TWBState$REG))
+library(ggalt)
+TFdumb1520 <- ggplot(TWBState, aes(x=TF15, xend=TF20, y= reorder(State, -TF15))) + 
+        geom_dumbbell(size_x = 3,
+                      colour_x = "#AA4499",
+                      size_xend = 3,
+                      colour_xend = "#332288",
+                      size=1, 
+                      dot_guide = TRUE) + 
+  labs(x=NULL, y=NULL, 
+             title="Trust Fund by State Dumbbell Chart", 
+             subtitle="Change from 2015 vs 2020 in millions of dollars") +
+        theme_classic()
+plot(TFdumb1520)
+
+## This shows an interesting point: every state/territory either managed to improve
+## how much was in their trust fund or stay put with one lone exception: OK.
+## And yet, they one of the higher TF amounts in 2015. What gives?
+```
+
+
+### WBA Comparison Visualized
+## Taxable Wage Base
+```{r}
+WBABasep20 <- ggplot(TWBState, aes(y=MWBA20, x=TWB20)) +
+  xlab("Taxable Wage Base 2020 by State") +
+  ylab("Maximum Weekly Benefit Amount 2020 by State") +
+  geom_smooth(method=lm, se=FALSE) +
+  geom_text(label = TWBState$State, size = 3) +
+  xlim(NA, 50000)
+WBABasep16 <- ggplot(TWBState, aes(y=MWBA16, x=TWB16)) +
+  xlab("Taxable Wage Base 2016 by State") +
+  ylab("Maximum Weekly Benefit Amount 2016 by State") +
+  geom_smooth(method=lm, se=FALSE) +
+  geom_text(label = TWBState$State, size = 3) +
+  xlim(NA, 50000)
+
+multiplot(WBABasep20, WBABasep16, cols=2)
+```
+
+## Trust Fund
+```{r}
+WBAFundp20 <- ggplot(TWBState, aes(y=MWBA20, x=TF20)) +
+  xlab("Trust Fund 2020 by State") +
+  ylab("Maximum Weekly Benefit Amount 2020 by State") +
+  geom_text(label = TWBState$State, size = 3) +
+  coord_cartesian(xlim = c(0, 5250)) 
+WBAFundp16 <- ggplot(TWBState, aes(y=MWBA16, x=TF16)) +
+  xlab("Trust Fund 2016 by State") +
+  ylab("Maximum Weekly Benefit Amount 2016 by State") +
+  geom_text(label = TWBState$State, size = 3) +
+  coord_cartesian(xlim = c(0, 5250))
+
+multiplot(WBAFundp20, WBAFundp16, cols=2)
+```
+
+### By political leaning.
+## Bar plot for TF levels, Pres Dem vs Repub.
+```{r}
+TWBState$RPE20 <- as.factor(TWBState$RPE20)
+
+TFbpol20 <- ggplot(TWBState, aes(y=TF20/Pop20, x=RPE20, fill = RPE20)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual (values = c("#332288", "#661100"), 
+                     labels = c("Democratic", "Republican"),
+                     name = c("TF by Presidential Party")) +
+  xlab("Electoral College Presidential Vote") +
+  ylab("Trust Fund 2020 Amount (in millions)") +
+  coord_cartesian(ylim = c(0, 0.010))
+
+TWBState$RPE16 <- as.factor(TWBState$RPE16)
+
+TFbpol16 <- ggplot(TWBState, aes(y=TF16/Pop16, x=RPE16, fill = RPE16)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual (values = c("#332288", "#661100"), 
+                     labels = c("Democratic", "Republican"),
+                     name = c("TF by Presidential Party")) +
+  xlab("Electoral College Presidential Vote") +
+  ylab("Trust Fund 2016 Amount (in millions)") +
+  coord_cartesian(ylim = c(0, 0.010))
+
+multiplot(TFbpol20, TFbpol16, cols=2)
+```
+
+## Bar plot for TWB levels.
+
+## Political Highlights 20
+```{r}
+TWBFundRP20 <- ggplot(TWBState, aes(y=TWB20, x=TF20, color= factor(RP20))) +
+  geom_smooth(method=lm, se=FALSE) +
+  scale_color_manual(values = c("gray40","red")) +
+  xlab("Trust Fund 2020 by State (in millions)") +
+  ylab("Taxable Wage Base 2020 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+TWBFundRP20
+TWBFundDP20 <- ggplot(TWBState, aes(y=TWB20, x=TF20, color= factor(RP20))) +
+  geom_smooth(method=lm, se=FALSE) +
+  scale_color_manual(values = c("blue", "gray40")) +
+  xlab("Trust Fund 2020 by State (in millions)") +
+  ylab("Taxable Wage Base 2020 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+TWBFundDP20
+```
+## Political Highlights 16
+```{r}
+TWBFundRP16 <- ggplot(TWBState, aes(y=TWB16, x=TF16, color= factor(RP16))) +
+  geom_smooth(method=lm, se=FALSE) +
+  scale_color_manual(values = c("gray40","red")) +
+  xlab("Trust Fund 2016 by State (in millions)") +
+  ylab("Taxable Wage Base 2016 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+TWBFundRP16
+TWBFundDP16 <- ggplot(TWBState, aes(y=TWB16, x=TF16, color= factor(RP16))) +
+  geom_smooth(method=lm, se=FALSE) +
+  scale_color_manual(values = c("blue", "gray40")) +
+  xlab("Trust Fund 2016 by State (in millions)") +
+  ylab("Taxable Wage Base 2016 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+TWBFundDP16
+```
+
+## Political Highlights Multiplot 20 v 16
+```{r}
+multiplot(TWBFundRP16,TWBFundRP20, cols=2)
+multiplot(TWBFundDP16,TWBFundDP20, cols=2)
+```
+
+## MAYBE HIGHLIGHT THOSE THAT SWITCHED PARTIES? (Use scatterplot encircling
+## from master webpage for that.)
+```{r}
+chgstate20 <- TWBState[which(TWBState$RP20 == "1" & TWBState$DP16 == "1" | 
+                         TWBState$DP20 == "1" & TWBState$RP16== "1")]
+summary(chgstate20)
+## I think this doesn't work because it doesn't include TF in it. Error reads
+## "error in FUN(X[i]], ...): object 'TF20' not found." And based on the example
+## online that looks to be correct. So add & operator in there with wide TF
+## parameters, since we're looking more at who changed political sides.
+
+TWBFundRPCir20 <- ggplot(TWBState, aes(y=TWB20, x=TF20, color= factor(RP20))) +
+  geom_smooth(method=lm, se=FALSE) +
+  scale_color_manual(values = c("gray40","red")) +
+  geom_encircle(aes(y=TWB20, x=TF20),
+                data = chgstate20,
+                color = "purple3",
+                size=1.75,
+                expand = 0.05) +
+  xlab("Trust Fund 2020 by State (in millions)") +
+  ylab("Taxable Wage Base 2020 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+TWBFundRPCir20
+TWBFundDP20 <- ggplot(TWBState, aes(y=TWB20, x=TF20, color= factor(RP20))) +
+  geom_smooth(method=lm, se=FALSE) +
+  scale_color_manual(values = c("blue", "gray40")) +
+  xlab("Trust Fund 2020 by State (in millions)") +
+  ylab("Taxable Wage Base 2020 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+TWBFundDP20
+
+TWBFundRP16 <- ggplot(TWBState, aes(y=TWB16, x=TF16, color= factor(RP16))) +
+  geom_smooth(method=lm, se=FALSE) +
+  scale_color_manual(values = c("gray40","red")) +
+  xlab("Trust Fund 2016 by State (in millions)") +
+  ylab("Taxable Wage Base 2016 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+TWBFundRP16
+TWBFundDP16 <- ggplot(TWBState, aes(y=TWB16, x=TF16, color= factor(RP16))) +
+  geom_smooth(method=lm, se=FALSE) +
+  scale_color_manual(values = c("blue", "gray40")) +
+  xlab("Trust Fund 2016 by State (in millions)") +
+  ylab("Taxable Wage Base 2016 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+TWBFundDP16
+```
+
+
+### By geographical region.
+
+## Regional Highlights 20
+```{r}
+WBAFundMW20 <- ggplot(TWBState, aes(y=MWBA20, x=TF20, color= factor(REG))) +
+  scale_color_manual(values = c("gray40", "gray40", "red", "gray40")) +
+  xlab("Trust Fund 2020 by State (in millions)") +
+  ylab("Maximum Weekly Benefit Amount 2020 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+WBAFundNE20 <- ggplot(TWBState, aes(y=MWBA20, x=TF20, color= factor(REG))) +
+  scale_color_manual(values = c("gray40", "gray40", "gray40", "red")) +
+  xlab("Trust Fund 2020 by State (in millions)") +
+  ylab("Maximum Weekly Benefit Amount 2020 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+WBAFundS20 <- ggplot(TWBState, aes(y=MWBA20, x=TF20, color= factor(REG))) +
+  scale_color_manual(values = c("gray40","red", "gray40", "gray40")) +
+  xlab("Trust Fund 2020 by State (in millions)") +
+  ylab("Maximum Weekly Benefit Amount 2020 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+WBAFundW20 <- ggplot(TWBState, aes(y=MWBA20, x=TF20, color= factor(REG))) +
+  scale_color_manual(values = c("red", "gray40", "gray40", "gray40")) +
+  xlab("Trust Fund 2020 by State (in millions)") +
+  ylab("Maximum Weekly Benefit Amount 2020 by State") +
+  geom_text(label = TWBState$State, size = 4) + 
+  coord_cartesian(xlim = c(0, 5250))
+```
+
+## Regional Highlights 15
+```{r}
+WBAFundMW15 <- ggplot(TWBState, aes(y=MWBA15, x=TF15, color=REG)) +
+  scale_color_manual(values = c("gray40", "gray40", "red", "gray40")) +
+  xlab("Trust Fund 2015 by State (in millions)") +
+  ylab("Maximum Weekly Benefit Amount 2015 by State") +
+  geom_text(label = TWBState$State, size = 4) +
+  coord_cartesian(xlim = c(0, 5250))
+WBAFundNE15 <- ggplot(TWBState, aes(y=MWBA15, x=TF15, color=REG)) +
+  scale_color_manual(values = c("gray40", "gray40", "gray40", "red")) +
+  xlab("Trust Fund 2015 by State (in millions)") +
+  ylab("Maximum Weekly Benefit Amount 2015 by State") +
+  geom_text(label = TWBState$State, size = 4) +
+  coord_cartesian(xlim = c(0, 5250))
+WBAFundS15 <- ggplot(TWBState, aes(y=MWBA15, x=TF15, color=REG)) +
+  scale_color_manual(values = c("gray40","red", "gray40", "gray40")) +
+  xlab("Trust Fund 2015 by State (in millions)") +
+  ylab("Maximum Weekly Benefit Amount 2015 by State") +
+  geom_text(label = TWBState$State, size = 4) +
+  coord_cartesian(xlim = c(0, 5250))
+WBAFundW15 <- ggplot(TWBState, aes(y=MWBA15, x=TF15, color=REG)) +
+  scale_color_manual(values = c("red", "gray40", "gray40", "gray40")) +
+  xlab("Trust Fund 2015 by State (in millions)") +
+  ylab("Maximum Weekly Benefit Amount 2015 by State") +
+  geom_text(label = TWBState$State, size = 4) +
+  coord_cartesian(xlim = c(0, 5250))
+```
+
+## Regional Highlights Multiplot 20 v 15
+```{r}
+multiplot(WBAFundMW15,WBAFundMW20, cols=2)
+multiplot(WBAFundNE15,WBAFundNE20, cols=2)
+multiplot(WBAFundS15,WBAFundS20, cols=2)
+multiplot(WBAFundW15,WBAFundW20, cols=2)
+```
+
+
+## Bar color filled.
+```{r}
+TFbf20 <- ggplot(TWBState, aes(y=TF20, x=REG, fill = REG)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("purple4", "forestgreen", "dodgerblue3", "turquoise3")) +
+  xlab("Geographic Regions") +
+  ylab("Trust Fund 2020 Amount") +
+  coord_cartesian(ylim = c(0, 23000))
+TFbf16 <- ggplot(TWBState, aes(y=TF16, x=REG, fill = REG)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("purple4",  "forestgreen", "dodgerblue3", "turquoise3")) +
+  xlab("Geographic Regions") +
+  ylab("Trust Fund 2016 Amount") +
+  coord_cartesian(ylim = c(0, 23000))
+
+multiplot(TFbf16, TFbf20, cols=2)
+```
+
+## Bar with stripes to show where different states hit.
+```{r}
+TFbs16 <- ggplot(TWBState, aes(y=TF16, x=REG, color = REG)) +
+  geom_bar(stat = "identity") +
+  scale_color_manual(values = c("purple4", "forestgreen", "dodgerblue3", "turquoise3")) +
+  xlab("Geographic Regions") +
+  ylab("Trust Fund 2016 Amount") +
+  coord_cartesian(ylim = c(0, 23000))
+TFbs20 <- ggplot(TWBState, aes(y=TF20, x=REG, color = REG)) +
+  geom_bar(stat = "identity") +
+  scale_color_manual(values = c("purple4", "forestgreen", "dodgerblue3", "turquoise3")) +
+  xlab("Geographic Regions") +
+  ylab("Trust Fund 2020 Amount") +
+  coord_cartesian(ylim = c(0, 23000))
+
+multiplot(TFbs16, TFbs20, cols=2)
+```
+
+## Joyplot/Ridgeplot
+
+```{r}
+TFjoy20<- ggplot(TWBState, aes(x = TF20, y = REG, fill = REG)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") +
+  scale_fill_manual(values = c("#88CCEE", "44AA99", "117733", "332288"))
+TFjoy16 <- ggplot(TWBState, aes(x = TF16, y = REG, fill = REG)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") +
+  scale_fill_manual(values = c("#88CCEE", "44AA99", "117733", "332288"))
+
+multiplot(TFjoy20, TFjoy16, cols = 2)
+## LEFT OFF HERE.
+```
+
+
+## Box and Whiskers of regions.
+```{r}
+TFbox16 <- ggplot(TWBState, aes(y=TF16, x=REG)) +
+  geom_boxplot() +
+  xlab("Geographic Regions") +
+  ylab("Trust Fund 2016 Amount") +
+  coord_cartesian(ylim = c(0, 5000))
+TFbox20 <- ggplot(TWBState, aes(y=TF20, x=REG)) +
+  geom_boxplot() +
+  xlab("Geographic Regions") +
+  ylab("Trust Fund 2020 Amount") +
+  coord_cartesian(ylim = c(0, 5000))
+
+multiplot(TFbox16, TFbox20, cols=2)
+```
+
+## Timelapse/line graph of regions, TFYear.
+```{r}
+
+TFYear$W <- c(TFYear$AK+TFYear$AZ+TFYear$CA+TFYear$CO+TFYear$HI+TFYear$ID 
+              +TFYear$MT+TFYear$NV+TFYear$NM+TFYear$OR+TFYear$UT+TFYear$WA
+              +TFYear$WY/13)
+TFYear$MW <- c(TFYear$IL+TFYear$IN+TFYear$IA+TFYear$KS+TFYear$MI+TFYear$MN
+               +TFYear$MO+TFYear$NE+TFYear$ND+TFYear$OH+TFYear$SD+TFYear$WI/12)
+TFYear$S <- c(TFYear$AL+TFYear$AR+TFYear$DC+TFYear$FL+TFYear$GA+TFYear$KY+TFYear$LA
+              +TFYear$MS+TFYear$NC+TFYear$OK+TFYear$PR+TFYear$TX+TFYear$VA
+              +TFYear$VI+TFYear$WV/17)
+TFYear$NE <- c(TFYear$CT+TFYear$ME+TFYear$MA+TFYear$NH+TFYear$NJ+TFYear$NY
+               +TFYear$PA+TFYear$RI+TFYear$VT/9)
+
+TFtYR <- ggplot() +
+  geom_line(data=TFYear, aes(y=NE, x=Year, color="NE"), size = 1.1) +
+  geom_line(data=TFYear, aes(y=S, x=Year, color="S"), size = 1.1) +
+  geom_line(data=TFYear, aes(y=W, x=Year, color="W"), size = 1.1) +
+  geom_line(data=TFYear, aes(y=MW, x=Year, color="MW"), size = 1.1) +
+  xlab("Year") +
+  ylab("TF Amounts") +
+  ggtitle("Trust Fund Amounts 2015-2020 by Geographic Region") +
+  scale_color_manual(values = c("purple4", "forestgreen", "dodgerblue3", 
+                                "turquoise3"))
+
+```
+
+## Timelapse/line graph of regions, TWBYear.
+```{r}
+TWBYear$W <- c(TWBYear$AK+TWBYear$AZ+TWBYear$CA+TWBYear$CO+TWBYear$HI+TWBYear$ID 
+              +TWBYear$MT+TWBYear$NV+TWBYear$NM+TWBYear$OR+TWBYear$UT+TWBYear$WA
+              +TWBYear$WY/13)
+TWBYear$MW <- c(TWBYear$IL+TWBYear$IN+TWBYear$IA+TWBYear$KS+TWBYear$MI+TWBYear$MN
+               +TWBYear$MO+TWBYear$NE+TWBYear$ND+TWBYear$OH+TWBYear$SD+TWBYear$WI/12)
+TWBYear$S <- c(TWBYear$AL+TWBYear$AR+TWBYear$DC+TWBYear$FL+TWBYear$GA+TWBYear$KY+TWBYear$LA
+              +TWBYear$MS+TWBYear$NC+TWBYear$OK+TWBYear$PR+TWBYear$TX+TWBYear$VA
+              +TWBYear$VI+TWBYear$WV/17)
+TWBYear$NE <- c(TWBYear$CT+TWBYear$ME+TWBYear$MA+TWBYear$NH+TWBYear$NJ+TWBYear$NY
+               +TWBYear$PA+TWBYear$RI+TWBYear$VT/9)
+
+TWBtYR <- ggplot() +
+  geom_line(data=TWBYear, aes(y=NE, x=Year, color="NE"), size = 1.1) +
+  geom_line(data=TWBYear, aes(y=S, x=Year, color="S"), size = 1.1) +
+  geom_line(data=TWBYear, aes(y=W, x=Year, color="W"), size = 1.1) +
+  geom_line(data=TWBYear, aes(y=MW, x=Year, color="MW"), size = 1.1) +
+  xlab("Year") +
+  ylab("TWB Amounts") +
+  ggtitle("Taxable Wage Bases 2015-2020 by Geographic Region") +
+  scale_color_manual(values = c("purple4", "forestgreen", "dodgerblue3", 
+                                "turquoise3"))
+
+multiplot(TFtYR, TWBtYR, cols=2)
+```
+
+
+### By population.
+## Barplot TF.
+```{r}
+## DON'T RUN ALL PACKAGES BEFORE RUNNING THESE. JUST INTRO, VISUALIZATION PACKAGES
+## AND MULTIPLOT FUNCTION.
+
+TFbpop19 <- ggplot(TWBState, aes(Pop19cat, TF19, fill = Pop19cat)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_manual(values = c("purple4", "forestgreen", "dodgerblue3", 
+                                "turquoise3", "deepskyblue2")) +
+  xlab("Population Levels in 2019") +
+  ylab("Trust Fund 2019 Amount")
+TFbpop16 <- ggplot(TWBState, aes(Pop16cat, TF16, fill = Pop16cat)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_manual(values = c("purple4", "forestgreen", "dodgerblue3", 
+                                "turquoise3", "deepskyblue2")) +
+  xlab("Population Levels in 2016") +
+  ylab("Trust Fund 2016 Amount")
+
+multiplot(TFbpop19, TFbpop15, cols=2)
+```
+
+## Density plot TF.
+```{r}
+TFdenpop19 <- ggplot(TWBState, aes(TF19))
+TFdenpop19p <- TFdenpop19 + geom_density(aes(fill=factor(Pop19cat)), alpha=0.7) + 
+    labs(title="Density Plot", 
+         subtitle="Trust Fund Amount Grouped by Population Levels",
+         x="Trust Fund Amount (in thousands)",
+         fill="Population Levels 2019")
+
+## This is cool, but I'm honestly not sure exactly how to interpret this. Will
+## need clarification. On the web page I pulled it off of, it talks about how
+## this shows "how several data points are distributed."
+## In Landers, the difference between a histogram and a density plot is "histogram
+## is discrete, density is continuous." (pg 88)
+## Discrete is "can only take on certain values" whereas continous is "can take on
+## "any value in a range." All this said, I think density makes more sense, since
+## trust funds can be any figure between $0 to hundreds of millions of dollars.
+
+TFdenpop16 <- ggplot(TWBState, aes(TF16))
+TFdenpop16p <- TFdenpop16 + geom_density(aes(fill=factor(Pop17cat)), alpha=0.7) + 
+    labs(title="Density Plot", 
+         subtitle="Trust Fund Amount Grouped by Population Levels",
+         x="Trust Fund Amount (in thousands)",
+         fill="Population Levels 2016")
+
+multiplot (TFdenpop16p, TFdenpop19p, cols=2)
+```

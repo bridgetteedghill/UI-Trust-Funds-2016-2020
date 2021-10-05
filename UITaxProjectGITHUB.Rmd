@@ -1,0 +1,465 @@
+### UI Trust Fund, Taxable Wage Base, and Maximum Weekly Benefit Amount 
+### Comparison Analysis
+
+## Three data sets: "TWBState", "TWBYear", and "TFYear." "State" is IV state. 
+## (This is the more frequently used of the set.) "Year" is IV year.
+
+## X (Independent Variables) - Taxable Wage Base (TWB), Trust Fund (TF), Maximum
+## Weekly Benefit Amount (MWBA).
+## Y (Dependent variables) - Political party affiliation (Republican 
+## Governor(RG) v Democratic Governor (DG), Republican President (RP) v 
+## Democratic President (DP), Population, Geographic Area, and 
+## Gross Domestic Product (GDP).
+
+## Hypothesis 1: States with higher trust fund amounts will have higher taxable 
+## wage base.
+## H2: States with lower MWBA will have lower TWB, higher TFs.
+## H3: In states that see a change from Republican to Democratic administrations,
+## there will be higher TWBs, lower TFs, higher MWBAs.
+
+library(readxl)
+TWBState <- read_excel("C:/Users/Bridgette/Desktop/UI Tax Project/TWBState.xlsx", 
+    guess_max = min(2000, n_max = NULL))
+library(readxl)
+TWBYear <- read_excel("C:/Users/Bridgette/Desktop/UI Tax Project/TWBYear.xlsx", 
+    guess_max = min(2000, n_max = NULL))
+library(readxl)
+TFYear <- read_excel("C:/Users/Bridgette/Desktop//UI Tax Project/TFYear.xlsx", 
+    guess_max = min(2000, n_max = NULL))
+
+### NEED TO TAKE ADJUSTED TF AND APPLY IT TO EVERYTHING BELOW HETEROSKEDASTICITY.
+
+### Regression analysis TWB by trust fund amount (current year)
+```{r}
+TFC20 <- lm(TF19 ~ TWB19, data = TWBState)
+TFC16 <- lm(TF15 ~ TWB15, data = TWBState)
+summary(TFC15)
+
+## Nothing significant here.
+```
+
+## States by trust fund amount (prior year)
+```{r}
+TFP20 <- lm(TF19 ~ TWB20, data = TWBState)
+summary(TFP20)
+TFP16 <- lm(TF15 ~ TWB16, data = TWBState)
+summary(TFP16)
+
+## Again, nothing significant.
+```
+
+### Regression analysis TWB by MWBA
+```{r}
+WBAT20 <- lm(TWB20 ~ MWBA19, data = TWBState)
+summary(WBAT20)
+WBAT16 <- lm(TWB16 ~ MWBA15, data = TWBState)
+summary(WBAT16)
+
+## And here's where we start finding significance. We're seeing a range from
+## 0.003-0.007 statistical significance across years. The 0.007 was the highest
+## in 2015, after that it had an even stronger relationship between the two factors
+## ranging from 0.004-0.003 in the last three years (2019-2021). *NOTE: This was
+## staggered to review the previous year's MWBA to the next year's TWB.
+```
+
+## And TF by MWBA
+```{r}
+WBATF20 <- lm(TF20 ~ MWBA19, data = TWBState)
+summary(WBATF20)
+WBATF16 <- lm(TF16 ~ MWBA15, data = TWBState)
+summary(WBATF16)
+
+## Now, this is an interesting turn around. Where the taxable wage base had a
+## statistically significant relationship with MWBA, the trust fund does not at
+## all. 
+```
+
+### OLS Calibrations.
+## Improved regression (heteroskedasticity) - TWB
+ImprTWB21R <- lm(TWB21 ~ RG21 + RP20, data = TWBPolState, 
+                  na.action = na.exclude)
+summary(ImprTWB21R)
+bptest(ImprTWB21R, studentize = FALSE)
+## Not statistically significant, so no heteroskedasticity.
+
+## Improved regression (heteroskedasticity) - TF
+ImprTF20R <- lm(TF20 ~ RG20 + RP20, data = TWBPolState, 
+                  na.action = na.exclude)
+summary(ImprTF20R)
+bptest(ImprTF20R, studentize = FALSE)
+
+## This is statistically significant, so we do have heteroskedasticity.
+```{r}
+ImprTF19R <- lm(TF19 ~ RG19, data = TWBState, 
+                  na.action = na.exclude)
+summary(ImprTF19R)
+bptest(ImprTF19R, studentize = FALSE)
+ImprTF18R <- lm(TF18 ~ RG18, data = TWBState, 
+                  na.action = na.exclude)
+summary(ImprTF18R)
+bptest(ImprTF18R, studentize = FALSE)
+ImprTF17R <- lm(TF17 ~ RG17, data = TWBState, 
+                  na.action = na.exclude)
+summary(ImprTF17R)
+bptest(ImprTF17R, studentize = FALSE)
+ImprTF16R <- lm(TF16 ~ RG16 + RP16, data = TWBState, 
+                  na.action = na.exclude)
+summary(ImprTF16R)
+bptest(ImprTF16R, studentize = FALSE)
+ImprTF15R <- lm(TF15 ~ RG15, data = TWBState, 
+                  na.action = na.exclude)
+summary(ImprTF15R)
+bptest(ImprTF15R, studentize = FALSE)
+```
+
+## Every year is statistically significant, some pretty dramatically so. We'll 
+## work on getting it fixed.
+
+### Fixing heteroskedasticity for TF.
+```{r}
+## Hetero or homo-skedastic?
+varTF20 <- summary(ImprTF20R)
+SERTF20 <- varTF20$sigma
+varTWB20 <- (nrow(TWBState)-1) * var(TWBState$TWB20)
+SETF20 <- sqrt(SERTF20)
+round(varTF20$coefficients[2,2], 4) == round(SETF20)
+## Hetero. 
+
+AdjTF15 <- TWBState$TF15/TWBState$Pop15
+AdjTF16 <- TWBState$TF16/TWBState$Pop16
+AdjTF17 <- TWBState$TF17/TWBState$Pop17
+AdjTF18 <- TWBState$TF18/TWBState$Pop18
+AdjTF19 <- TWBState$TF19/TWBState$Pop19
+AdjTF20 <- TWBState$TF20/TWBState$Pop20
+
+AdjTFTWBGDP20 <- lm(AdjTF20 ~ TWB20 + GDP20, data = TWBState)
+summary(AdjTFTWBGDP20)
+AdjTFTWB20 <- lm(AdjTF20 ~ TWB20, data = TWBState)
+summary(AdjTFTWB20)
+AdjTFTWB16 <- lm(AdjTF16 ~ TWB16 + GDP16, data = TWBState)
+summary(AdjTFTWB16)
+
+TWBState$logTF20 <- log(TWBState$TF20)
+AdjTF20RPP <- lm(AdjTF20 ~ RG20 + RPP20 + GDP20, data = TWBState)
+summary(AdjTF20RPP)
+bptest(AdjTF20RPP, studentize = FALSE)
+AdjTF20RPE <- lm(AdjTF20 ~ RG20 + RPE20 + GDP20, data = TWBState)
+summary(AdjTF20RPE)
+bptest(AdjTF20RPE, studentize = FALSE)
+AdjTF16RPP <- lm(AdjTF15 ~ RG16 + RPP16 + GDP16, data = TWBState)
+summary(AdjTF16RPP)
+bptest(AdjTF16RPP, studentize = FALSE)
+AdjTF16RPE <- lm(AdjTF16 ~ RG16 + RPE16 + GDP16, data = TWBState)
+summary(AdjTF16RPE)
+bptest(AdjTF16RPE, studentize = FALSE)
+
+```
+
+
+## Checking for multicollinearity in variables - TWB
+vif(TWB21RMult)
+## No multicollinearity problem, as they are both rather close to 1 at 1.02.
+vif(TF20RMult)
+## No multicollinearity problem, as they are both at 1.01.
+
+
+### Multiple regression TWB/TF (controlling for Governor, Presidential Party 
+## preference)
+
+## 2020 Presidential Run
+```{r}
+TWB20RPP <- lm(TWB20 ~ RG20 + RPP20 + GDP20, data = TWBState)
+summary(TWB20RPP)
+TWB20DPP <- lm(TWB20 ~ DG20 + DPP20 + GDP20, data = TWBState)
+summary(TWB20DPP)
+TWB20RPE <- lm(TWB20 ~ RG20 + RPE20 + GDP20, data = TWBState)
+summary(TWB20RPE)
+TWB20DPE <- lm(TWB20 ~ DG20 + DPE20 + GDP20, data = TWBState)
+summary(TWB20DPE)
+
+
+TF20RPP <- lm(AdjTF20 ~ RG20 + RPP20 + GDP20, data = TWBState)
+summary(TF20RMult)
+TF20DPP <- lm(AdjTF20 ~ DG20 + DPP20 + GDP20, data = TWBState)
+summary(TF20DMult)
+TF20RPE <- lm(AdjTF20 ~ RG20 + RPE20 + GDP20, data = TWBState)
+summary(TF20RMult)
+TF20DPE <- lm(AdjTF20 ~ DG20 + DPE20 + GDP20, data = TWBState)
+summary(TF20DMult)
+
+## No statistical significance here. The taxable wage base seems to have less of
+## a relationship than trust fund, but either way it's not enough
+## to show any sort of relationship with political leaning of a state and
+## taxable wage base/trust fund in 2020.
+```
+
+## 2016 Presidential Run (TWB/TF)
+```{r}
+TWB16RPE <- lm(TWB16 ~ RG16 + RPE16 + GDP16, data = TWBState)
+summary(TWB16RPE)
+TWB16DPE <- lm(TWB16 ~ DG16 + DPE16 + GDP16, data = TWBState)
+summary(TWB16DPE)
+TWB16RPP <- lm(TWB16 ~ RG16 + RPP16 + GDP16, data = TWBState)
+summary(TWB16RPP)
+TWB16DPP <- lm(TWB16 ~ DG16 + DPP16 + GDP16, data = TWBState)
+summary(TWB16DPP)
+
+TF16RPE <- lm(TF16 ~ RG16 + RPE16 + GDP16, data = TWBState)
+summary(TF16RPE)
+TF16DPE <- lm(TF16 ~ DG16 + DPE16 + GDP16, data = TWBState)
+summary(TF16DPE)
+TF16RPP <- lm(TF16 ~ RG16 + RPP16 + GDP16, data = TWBState)
+summary(TF16RPP)
+TF16DPP <- lm(TF16 ~ DG16 + DPP16 + GDP16, data = TWBState)
+summary(TF16DPP)
+
+## It seems like 2016 was close enough to show some relationship between taxable
+## wage base/trust fund and partisan political leaning. The way it breaks out is 
+## intriguing. For the taxable wage base, the presidential race on both sides
+## of the aisle showed significance at the 0.1-0.05 level. For the trust fund, the
+## gubernatorial race was where the relationship showed at the 0.01 level, so
+## slightly stronger. 
+```
+
+
+### States by geographic location regression analysis
+
+## 2021
+```{r}
+S21 <- lm(TWB21 ~ S, data = TWBState) 
+summary(S21)
+NE21 <- lm(TWB21 ~ NE, data = TWBState) 
+summary(NE21)
+W21 <- lm(TWB21 ~ W, data = TWBState) 
+summary(W21)
+MW21 <- lm(TWB21 ~ MW, data = TWBState) 
+summary(MW21)
+```
+
+## 2020
+```{r}
+S20 <- lm(TWB20 ~ S, data = TWBState) 
+summary(S20)
+NE20 <- lm(TWB20 ~ NE, data = TWBState) 
+summary(NE20)
+W20 <- lm(TWB20 ~ W, data = TWBState) 
+summary(W20)
+MW20 <- lm(TWB20 ~ MW, data = TWBState) 
+summary(MW20)
+```
+
+## 2019
+```{r}
+S19 <- lm(TWB19 ~ S, data = TWBState) 
+summary(S19)
+NE19 <- lm(TWB19 ~ NE, data = TWBState) 
+summary(NE19)
+W19 <- lm(TWB19 ~ W, data = TWBState) 
+summary(W19)
+MW19 <- lm(TWB19 ~ MW, data = TWBState) 
+summary(MW19)
+```
+
+## 2018
+```{r}
+S18 <- lm(TWB18 ~ S, data = TWBState) 
+summary(S18)
+NE18 <- lm(TWB18 ~ NE, data = TWBState) 
+summary(NE18)
+W18 <- lm(TWB18 ~ W, data = TWBState) 
+summary(W18)
+MW18 <- lm(TWB18 ~ MW, data = TWBState) 
+summary(MW18)
+```
+
+## 2017
+```{r}
+S17 <- lm(TWB17 ~ S, data = TWBState) 
+summary(S17)
+NE17 <- lm(TWB17 ~ NE, data = TWBState) 
+summary(NE17)
+W17 <- lm(TWB17 ~ W, data = TWBState) 
+summary(W17)
+MW17 <- lm(TWB17 ~ MW, data = TWBState) 
+summary(MW17)
+```
+
+## 2016
+```{r}
+S16 <- lm(TWB16 ~ S, data = TWBState) 
+summary(S16)
+NE16 <- lm(TWB16 ~ NE, data = TWBState) 
+summary(NE16)
+W16 <- lm(TWB16 ~ W, data = TWBState) 
+summary(W16)
+MW16 <- lm(TWB16 ~ MW, data = TWBState) 
+summary(MW16)
+```
+
+## 2015  
+```{r}
+S15 <- lm(TWB15 ~ S, data = TWBState) 
+summary(S15)
+NE15 <- lm(TWB15 ~ NE, data = TWBState) 
+summary(NE15)
+W15 <- lm(TWB15 ~ W, data = TWBState) 
+summary(W15)
+MW15 <- lm(TWB15 ~ MW, data = TWBState) 
+summary(MW15)
+```
+
+## MW Only Regression
+```{r}
+MWTF20 <- lm(TF20 ~ TWB21+TWB20+TWB19+TWB18+TWB17+TWB16, data = MWonly)
+summary (MWTF20)
+MWTF19 <- lm(TF19 ~ TWB21+TWB20+TWB19+TWB18+TWB17+TWB16, data = MWonly)
+summary (MWTF19)
+MWTF18 <- lm(TF18 ~ TWB21+TWB20+TWB19+TWB18+TWB17+TWB16, data = MWonly)
+summary (MWTF18)
+MWTF17 <- lm(TF17 ~ TWB21+TWB20+TWB19+TWB18+TWB17+TWB16, data = MWonly)
+summary (MWTF17)
+MWTF16 <- lm(TF16 ~ TWB21+TWB20+TWB19+TWB18+TWB17+TWB16, data = MWonly)
+summary (MWTF16)
+MWTF15 <- lm(TF15 ~ TWB21+TWB20+TWB19+TWB18+TWB17+TWB16, data = MWonly)
+summary (MWTF15)
+```
+
+
+### Mult regression analysis TWB by region
+## (RTWB == Regional TWB, RTF == Regional TF) MW is the control group. 
+
+```{r}
+RTWB21 <- lm(TWB21 ~ S + NE + W + MW, data = TWBState)
+summary(RTWB21)
+RTWB20 <- lm(TWB20 ~ S + NE + W + MW + GDP20, data = TWBState)
+summary(RTWB20)
+RTWB19 <- lm(TWB19 ~ S + NE + W + MW + GDP19, data = TWBState)
+summary(RTWB19)
+RTWB18 <- lm(TWB18 ~ S + NE + W + MW + GDP18, data = TWBState)
+summary(RTWB18)
+RTWB17 <- lm(TWB17 ~ S + NE + W + MW + GDP17, data = TWBState)
+summary(RTWB17)
+RTWB16 <- lm(TWB16 ~ S + NE + W + MW GDP16, data = TWBState)
+summary(RTWB16)
+RTWB15 <- lm(TWB15 ~ S + NE + W + MW GDP15, data = TWBState)
+summary(RTWB15)
+```
+
+### Mult regression analysis TF by region
+```{r}
+RTF20 <- lm(AdjTF20 ~ S + NE + W + MW + GDP20, data = TWBState)
+summary(RTF20)
+RTF19 <- lm(AdjTF19 ~ S + NE + W + MW + GDP19, data = TWBState)
+summary(RTF19)
+RTF18 <- lm(AdjTF18 ~ S + NE + W + MW + GDP18, data = TWBState)
+summary(RTF18)
+RTF17 <- lm(AdjTF17 ~ S + NE + W + MW + GDP17, data = TWBState)
+summary(RTF17)
+RTF16 <- lm(AdjTF16 ~ S + NE + W + MW + GDP16, data = TWBState)
+summary(RTF16)
+RTF15 <- lm(AdjTF15 ~ S + NE + W + MW + GDP15, data = TWBState)
+summary(RTF15)
+```
+
+
+## Setting population categories
+
+```{r}
+TWBState %>% mutate(Pop19cat = cut(Pop19, breaks = c(-Inf, 1360000, 3200000, 
+                                                        6200000, 12700000, Inf), 
+                                      labels = c ("<1360000", "1360001-3200000",
+                                                      "3200001-6200000", 
+                                                      "6200001-12700000",
+                                                      ">12700001")))
+TWBState$Pop19cat <- cut(TWBState$Pop19, c(-Inf, 1360000, 3200000, 6200000, 
+                                                 12700000, Inf),
+                            labels = c ("<1360000", "1360001-3200000", 
+                                        "3200001-6200000", "6200001-12700000",
+                                        ">12700001"))
+
+TWBState %>% mutate(Pop18cat = cut(Pop18, breaks = c(-Inf, 1360000, 3200000, 
+                                                        6200000, 12700000, Inf), 
+                                      labels = c ("<1360000", "1360001-3200000",
+                                                      "3200001-6200000", 
+                                                      "6200001-12700000",
+                                                      ">12700001")))
+TWBState$Pop18cat <- cut(TWBState$Pop18, c(-Inf, 1360000, 3200000, 6200000, 
+                                                 12700000, Inf),
+                            labels = c ("<1360000", "1360001-3200000", 
+                                        "3200001-6200000", "6200001-12700000",
+                                        ">12700001"))
+
+TWBState %>% mutate(Pop17cat = cut(Pop17, breaks = c(-Inf, 1360000, 3200000, 
+                                                        6200000, 12700000, Inf), 
+                                      labels = c ("<1360000", "1360001-3200000",
+                                                      "3200001-6200000", 
+                                                      "6200001-12700000",
+                                                      ">12700001")))
+TWBState$Pop17cat <- cut(TWBState$Pop17, c(-Inf, 1360000, 3200000, 6200000, 
+                                                 12700000, Inf),
+                            labels = c ("<1360000", "1360001-3200000", 
+                                        "3200001-6200000", "6200001-12700000",
+                                        ">12700001"))
+
+TWBState %>% mutate(Pop16cat = cut(Pop16, breaks = c(-Inf, 1360000, 3200000, 
+                                                        6200000, 12700000, Inf), 
+                                      labels = c ("<1360000", "1360001-3200000",
+                                                      "3200001-6200000", 
+                                                      "6200001-12700000",
+                                                      ">12700001")))
+TWBState$Pop16cat <- cut(TWBState$Pop16, c(-Inf, 1360000, 3200000, 6200000, 
+                                                 12700000, Inf),
+                            labels = c ("<1360000", "1360001-3200000", 
+                                        "3200001-6200000", "6200001-12700000",
+                                        ">12700001"))
+
+TWBState %>% mutate(Pop15cat = cut(Pop15, breaks = c(-Inf, 1360000, 3200000, 
+                                                        6200000, 12700000, Inf), 
+                                      labels = c ("<1360000", "1360001-3200000",
+                                                      "3200001-6200000", 
+                                                      "6200001-12700000",
+                                                      ">12700001")))
+TWBState$Pop15cat <- cut(TWBState$Pop15, c(-Inf, 1360000, 3200000, 6200000, 
+                                                 12700000, Inf),
+                            labels = c ("<1360000", "1360001-3200000", 
+                                        "3200001-6200000", "6200001-12700000",
+                                        ">12700001"))
+
+## Changes in category: 15 (IL) down to 6200001-12700000 in 2019, 42 (SC) down to 1360001-3200000  
+##  in 2018 + 2019, and 46 (UT) up to 3200001-6200000 in 2019.
+```
+
+### Regression analysis TWB by population
+## (PTWB == Population TWB, PTF == Population TF)
+
+## LEFT OFF HERE.
+## NEED TO DECIDE IF METRICS ON TF ARE GOING TO BE SET BACK A YEAR OR LEFT IN THE
+## SAME YEAR.
+```{r}
+PTWB19 <- lm(TWB19 ~ Pop19cat, data = TWBState)
+summary(PTWB19)
+PTWB18 <- lm(TWB18 ~ Pop18cat, data = TWBState)
+summary(PTWB18)
+PTWB17 <- lm(TWB17 ~ Pop17cat, data = TWBState)
+summary(PTWB17)
+PTWB16 <- lm(TWB16 ~ Pop16cat, data = TWBState)
+summary(PTWB16)
+PTWB15 <- lm(TWB15 ~ Pop15cat, data = TWBState)
+summary(PTWB15)
+```
+
+### Regression analysis TF by population
+## (PTWB == Population TWB, PTF == Population TF)
+
+```{r}
+PTF19 <- lm(TF19 ~ Pop19cat, data = TWBState)
+summary(PTF19)
+PTF18 <- lm(TF18 ~ Pop18cat, data = TWBState)
+summary(PTF18)
+PTF17 <- lm(TF17 ~ Pop17cat, data = TWBState)
+summary(PTF17)
+PTF16 <- lm(TF16 ~ Pop16cat, data = TWBState)
+summary(PTF16)
+PTF15 <- lm(TF15 ~ Pop15cat, data = TWBState)
+summary(PTF15)
+```
